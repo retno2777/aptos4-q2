@@ -4,6 +4,12 @@ import "./index.css";
 import App from "./App";
 import { AptosWalletAdapterProvider } from "@aptos-labs/wallet-adapter-react";
 import { PetraWallet } from "petra-plugin-wallet-adapter";
+import { Buffer } from "buffer";
+
+if (!window.Buffer) {
+  window.Buffer = Buffer;
+}
+
 const wallets = [new PetraWallet()];
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement

@@ -1,93 +1,78 @@
-// src/App.tsx
-
-import React, { useState } from "react";
-import "./App.css";
-import { Layout, Modal, Form, Input, Select, Button, message } from "antd";
-import NavBar from "./components/NavBar";
-import MarketView from "./pages/MarketView";
+import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import MyNFTs from "./pages/MyNFTs";
-import { AptosClient } from "aptos";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
+import HomePage from "./pages/HomePage";
+import MyCollectionPage from "./pages/MyCollection";
+import MintNFTPage from "./pages/MintNFTPage";
+import ListForSalePage from "./pages/ListForSalePage";
+import StartAuctionPage from "./pages/StartAuctionPage";
+import MakeOfferPage from "./pages/MakeOfferPage";
+import AuctionManagementPage from "./pages/AuctionManagementPage";
+import WithdrawRoyaltiesPage from "./pages/WithdrawRoyaltiesPage";
+import { NFTMarketplaceService } from "./service/NFTMarketplaceService";
 
-const client = new AptosClient("https://fullnode.devnet.aptoslabs.com/v1");
-const marketplaceAddr = "0x0ac5bddf8d6e027664fc85a962292a40908184a1a30517db00310f716aac0336";
+const App: React.FC = () => {
+  const { account, connected } = useWallet();
 
-function App() {
-  const { signAndSubmitTransaction } = useWallet();
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  if (!connected || !account) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+        }}
+      >
+        <h1>Please connect your wallet to use the application</h1>
+      </div>
+    );
+  }
 
-  // Function to open the Mint NFT modal
-  const handleMintNFTClick = () => setIsModalVisible(true);
-
-  const handleMintNFT = async (values: { name: string; description: string; uri: string; rarity: number }) => {
-    try {
-      const nameVector = Array.from(new TextEncoder().encode(values.name));
-      const descriptionVector = Array.from(new TextEncoder().encode(values.description));
-      const uriVector = Array.from(new TextEncoder().encode(values.uri));
-
-      const entryFunctionPayload = {
-        type: "entry_function_payload",
-        function: `${marketplaceAddr}::NFTMarketplace::mint_nft`,
-        type_arguments: [],
-        arguments: [nameVector, descriptionVector, uriVector, values.rarity],
-      };
-
-      const txnResponse = await (window as any).aptos.signAndSubmitTransaction(entryFunctionPayload);
-      await client.waitForTransaction(txnResponse.hash);
-
-      message.success("NFT minted successfully!");
-      setIsModalVisible(false);
-    } catch (error) {
-      console.error("Error minting NFT:", error);
-      message.error("Failed to mint NFT.");
-    }
-  };
+  const marketplaceService = new NFTMarketplaceService(account.address);
 
   return (
     <Router>
-      <Layout>
-        <NavBar onMintNFTClick={handleMintNFTClick} /> {/* Pass handleMintNFTClick to NavBar */}
-
-        <Routes>
-          <Route path="/" element={<MarketView marketplaceAddr={marketplaceAddr} />} />
-          <Route path="/my-nfts" element={<MyNFTs />} />
-        </Routes>
-
-        <Modal
-          title="Mint New NFT"
-          visible={isModalVisible}
-          onCancel={() => setIsModalVisible(false)}
-          footer={null}
-        >
-          <Form layout="vertical" onFinish={handleMintNFT}>
-            <Form.Item label="Name" name="name" rules={[{ required: true, message: "Please enter a name!" }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item label="Description" name="description" rules={[{ required: true, message: "Please enter a description!" }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item label="URI" name="uri" rules={[{ required: true, message: "Please enter a URI!" }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item label="Rarity" name="rarity" rules={[{ required: true, message: "Please select a rarity!" }]}>
-              <Select>
-                <Select.Option value={1}>Common</Select.Option>
-                <Select.Option value={2}>Uncommon</Select.Option>
-                <Select.Option value={3}>Rare</Select.Option>
-                <Select.Option value={4}>Epic</Select.Option>
-              </Select>
-            </Form.Item>
-            <Form.Item>
-              <Button type="primary" htmlType="submit">
-                Mint NFT
-              </Button>
-            </Form.Item>
-          </Form>
-        </Modal>
-      </Layout>
+      <Routes>
+        <Route
+          path="/"
+          element={<HomePage marketplaceService={marketplaceService} />}
+        />
+        <Route
+          path="/my-nfts"
+          element={<MyCollectionPage marketplaceService={marketplaceService} />}
+        />
+        <Route
+          path="/mint-nft"
+          element={<MintNFTPage marketplaceService={marketplaceService} />}
+        />
+        <Route
+          path="/list-for-sale"
+          element={<ListForSalePage marketplaceService={marketplaceService} />}
+        />
+        <Route
+          path="/start-auction"
+          element={<StartAuctionPage marketplaceService={marketplaceService} />}
+        />
+        <Route
+          path="/make-offer"
+          element={<MakeOfferPage marketplaceService={marketplaceService} />}
+        />
+        <Route
+          path="/auction-management"
+          element={
+            <AuctionManagementPage marketplaceService={marketplaceService} />
+          }
+        />
+        <Route
+          path="/withdraw-royalties"
+          element={
+            <WithdrawRoyaltiesPage marketplaceService={marketplaceService} />
+          }
+        />
+      </Routes>
     </Router>
   );
-}
+};
 
 export default App;
